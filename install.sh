@@ -105,12 +105,17 @@ for dir in "${CONFIG_DIRS[@]}"; do
     fi
 done
 
-chown -R "$(whoami)":"$(whoami)" "$HOME/.config"
+# Copy .bashrc to home directory
+echo "📁 Copying .bashrc to /home/$(whoami)/"
+cp .bashrc "/home/$(whoami)/.bashrc"
 
-# === Done ===
+# Fix permissions just in case
+chown -R "$(whoami)":"$(whoami)" "$HOME/.config" "/home/$(whoami)/.bashrc"
+
 echo ""
 echo "✅ Setup complete!"
 echo "👉 Select 'Hyprland' in the SDDM login screen."
 echo "👉 Custom themes applied for GRUB and SDDM."
 echo "👉 Configs copied to ~/.config/"
+echo "👉 .bashrc copied to home directory."
 echo "👉 If AUR packages failed, re-run: yay -S <package>"
