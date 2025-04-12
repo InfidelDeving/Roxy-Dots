@@ -44,27 +44,42 @@ yay -S --noconfirm fastfetch kitty rofi vesktop waybar-cava nm-applet hyprpaper 
 
 set -e
 
-# Define some variables
+# Define variables
 INSTALL_DIR="$HOME/waterfox"
 BUILD_DIR="$INSTALL_DIR/waterfox-build"
 SYMLINK_DIR="/usr/local/bin"
 WATERFOX_BIN="$BUILD_DIR/obj-x86_64-pc-linux-gnu/dist/bin/waterfox"
 
-echo ">>> Installing dependencies..."
-sudo apt update
-sudo apt install -y git autoconf2.13 build-essential \
-  python3 python3-pip clang llvm libgtk-3-dev \
-  libdbus-glib-1-dev libxt-dev libx11-xcb-dev \
-  libgconf2-dev libasound2-dev yasm \
-  libpulse-dev libvpx-dev libxrandr-dev \
-  libxss-dev libnss3-dev libnspr4-dev unzip zip
+# List of required packages (split into official and AUR)
+ARCH_PACKAGES=(
+  git autoconf213 base-devel python python-pip clang llvm
+  gtk3 dbus-glib libxt libx11 libgconf alsa-lib yasm
+  libpulse libvpx libxrandr libxss nss nspr unzip zip
+  icu gstreamer gst-plugins-base
+)
+
+echo ">>> Checking and installing missing dependencies..."
+for pkg in "${ARCH_PACKAGES[@]}"; do
+  if pacman -Qi "$pkg" &>/dev/null; then
+    echo "✓ $pkg is already installed"
+  else
+    echo "→ Installing $pkg..."
+    sudo pacman -S --noconfirm "$pkg"
+  fi
+done
 
 echo ">>> Cloning Waterfox source..."
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
-git clone https://github.com/WaterfoxCo/Waterfox.git waterfox-source
+if [ ! -d waterfox-source ]; then
+  git clone https://github.com/WaterfoxCo/Waterfox.git waterfox-source
+else
+  echo "✓ Source already cloned. Pulling latest changes..."
+  cd waterfox-source
+  git pull
+fi
 
-cd waterfox-source
+cd "$INSTALL_DIR/waterfox-source"
 
 echo ">>> Setting up build environment..."
 cat > mozconfig <<EOF
@@ -81,15 +96,11 @@ echo ">>> Starting build (this may take a while)..."
 
 echo ">>> Build complete."
 
-# Optionally, install the binary in a known location
+# Create symlink
 echo ">>> Creating symlink to 'waterfox'..."
 sudo ln -sf "$WATERFOX_BIN" "$SYMLINK_DIR/waterfox"
 
 echo ">>> Done! You can now run Waterfox using the command: waterfox"
-
-
-echo "Waterfox installation complete!"
-
 
 # Define the list of configuration directories
 CONFIG_DIRS=("fastfetch" "hypr" "kitty" "rofi" "vesktop" "waybar")
