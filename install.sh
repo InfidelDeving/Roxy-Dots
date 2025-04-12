@@ -37,8 +37,8 @@ sudo pacman -Syu --noconfirm
 # Install the packages using yay
 echo "Installing packages..."
 
-sudo pacman -S --noconfirm ttf-inconsolata-g ttf-jetbrains-mono-nerd firefox
-yay -S --noconfirm fastfetch kitty rofi vesktop waybar-cava nm-applet hyprpaper mpvpaper hyprpolkit hyprlock hyprshot teams-for-linux
+sudo pacman -S --noconfirm ttf-jetbrains-mono-nerd firefox
+yay -S --noconfirm fastfetch kitty rofi vesktop waybar-cava nm-applet hyprpaper mpvpaper hyprpolkit hyprlock hyprshot teams-for-linux ttf-inconsolata-g
 
 
 # Define the list of configuration directories
