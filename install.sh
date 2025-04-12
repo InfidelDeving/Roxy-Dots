@@ -53,7 +53,7 @@ WATERFOX_BIN="$BUILD_DIR/obj-x86_64-pc-linux-gnu/dist/bin/waterfox"
 # List of required packages (split into official and AUR)
 ARCH_PACKAGES=(
   git base-devel python python-pip clang llvm
-  gtk3 dbus-glib libxt libx11 libgconf alsa-lib yasm
+  gtk3 dbus-glib libxt libx11 alsa-lib yasm
   libpulse libvpx libxrandr libxss nss nspr unzip zip
   icu gstreamer gst-plugins-base
 )
