@@ -17,6 +17,7 @@ fi
 
 # Install the required packages
 echo "Installing required packages..."
+sudo pacman -S ttf-inconsolata-g
 yay -S --noconfirm fastfetch kitty rofi vesktop waybar nm-applet hyprpaper mpvpaper hyprpolkit hyprlock hyprshot teams-for-linux
 
 # Ensure necessary directories exist
@@ -66,6 +67,23 @@ if [ ! -f "$SDDM_CONFIG" ]; then
     echo "Creating basic SDDM config file..."
     echo "Current=RoxySDDM" > "$SDDM_CONFIG"
 fi
+
+DIR=`pwd`
+FONT_DIR="$HOME/.local/share/fonts"
+ROFI_DIR="$HOME/.config/rofi"
+
+# Install Fonts
+install_fonts() {
+	echo -e ${BBlue}"\n[*] Installing fonts..." ${Color_Off}
+	if [[ -d "$FONT_DIR" ]]; then
+		cp -rf $DIR/fonts/* "$FONT_DIR"
+	else
+		mkdir -p "$FONT_DIR"
+		cp -rf $DIR/fonts/* "$FONT_DIR"
+	fi
+	echo -e ${BYellow}"[*] Updating font cache...\n" ${Color_Off}
+	fc-cache
+}
 
 # Copy .bashrc to $USER_HOME
 echo "Copying .bashrc to $USER_HOME..."
