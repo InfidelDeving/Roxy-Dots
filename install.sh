@@ -52,11 +52,13 @@ WATERFOX_BIN="$BUILD_DIR/obj-x86_64-pc-linux-gnu/dist/bin/waterfox"
 
 # List of required packages (split into official and AUR)
 ARCH_PACKAGES=(
-  git autoconf213 base-devel python python-pip clang llvm
+  git base-devel python python-pip clang llvm
   gtk3 dbus-glib libxt libx11 libgconf alsa-lib yasm
   libpulse libvpx libxrandr libxss nss nspr unzip zip
   icu gstreamer gst-plugins-base
 )
+
+yay -S --noconfirm autoconf2.13
 
 echo ">>> Checking and installing missing dependencies..."
 for pkg in "${ARCH_PACKAGES[@]}"; do
