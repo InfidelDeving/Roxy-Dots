@@ -36,12 +36,60 @@ sudo pacman -Syu --noconfirm
 # Install the packages using yay
 echo "Installing packages..."
 
+sudo pacman -S ttf-inconsolata-g
+sudo pacman -S ttf-jetbrains-mono-nerd
 yay -S --noconfirm fastfetch kitty rofi vesktop waybar-cava nm-applet hyprpaper mpvpaper hyprpolkit hyprlock hyprshot teams-for-linux
 
-echo "Installation complete!"
+#Waterfox from source because yay version is cooked
+
+set -e
+
+# Define some variables
+INSTALL_DIR="$HOME/waterfox"
+BUILD_DIR="$INSTALL_DIR/waterfox-build"
+SYMLINK_DIR="/usr/local/bin"
+WATERFOX_BIN="$BUILD_DIR/obj-x86_64-pc-linux-gnu/dist/bin/waterfox"
+
+echo ">>> Installing dependencies..."
+sudo apt update
+sudo apt install -y git autoconf2.13 build-essential \
+  python3 python3-pip clang llvm libgtk-3-dev \
+  libdbus-glib-1-dev libxt-dev libx11-xcb-dev \
+  libgconf2-dev libasound2-dev yasm \
+  libpulse-dev libvpx-dev libxrandr-dev \
+  libxss-dev libnss3-dev libnspr4-dev unzip zip
+
+echo ">>> Cloning Waterfox source..."
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+git clone https://github.com/WaterfoxCo/Waterfox.git waterfox-source
+
+cd waterfox-source
+
+echo ">>> Setting up build environment..."
+cat > mozconfig <<EOF
+ac_add_options --enable-application=browser
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/../obj-x86_64-pc-linux-gnu
+ac_add_options --enable-optimize
+ac_add_options --enable-release
+ac_add_options --disable-debug
+EOF
+
+echo ">>> Starting build (this may take a while)..."
+./mach bootstrap --no-interactive
+./mach build
+
+echo ">>> Build complete."
+
+# Optionally, install the binary in a known location
+echo ">>> Creating symlink to 'waterfox'..."
+sudo ln -sf "$WATERFOX_BIN" "$SYMLINK_DIR/waterfox"
+
+echo ">>> Done! You can now run Waterfox using the command: waterfox"
 
 
-#!/bin/bash
+echo "Waterfox installation complete!"
+
 
 # Define the list of configuration directories
 CONFIG_DIRS=("fastfetch" "hypr" "kitty" "rofi" "vesktop" "waybar")
@@ -67,7 +115,6 @@ done
 
 echo "Configuration directories have been moved to $DEST_DIR"
 
-#!/bin/bash
 
 # Move the RoxyGrub directory to /usr/share/grub/themes/
 sudo mv RoxyGrub /usr/share/grub/themes/
