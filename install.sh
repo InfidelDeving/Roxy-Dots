@@ -46,7 +46,7 @@ install_yay_packages waybar-cava hyprpaper mpvpaper hyprpolkit
 
 echo "🧷 Installing bind applications..."
 install_pacman_packages kitty dolphin rofi
-install_yay_packages vesktop teams-for-linux hyprshot hyprlock
+install_yay_packages vesktop teams-for-linux hyprshot hyprlock pywal
 
 # === Build and install Waterfox from source ===
 echo "🛠️ Building Waterfox from source..."
@@ -148,27 +148,28 @@ else
 fi
 
 # === Config Files ===
-echo "📁 Copying config directories to ~/.config..."
+echo "📁 Checking if config folders exist in the current directory..."
 CONFIG_DIRS=(fastfetch hypr kitty rofi vesktop wal waybar)
 
 mkdir -p "$HOME/.config"
 
 for dir in "${CONFIG_DIRS[@]}"; do
+    echo "Checking if directory $dir exists in $(pwd)..."
     if [ -d "$dir" ]; then
         echo "→ Copying $dir to ~/.config/"
-        cp -r "$dir" "$HOME/.config/"
+        sudo cp -r "$dir" "$HOME/.config/"
     else
-        echo "⚠️ Skipped $dir – not found."
+        echo "⚠️ Skipped $dir – not found in $(pwd)."
     fi
 done
 
 echo "📁 Copying .bashrc to $HOME/"
 if [ -f "$HOME/.bashrc" ]; then
-    cp "$HOME/.bashrc" "$HOME/.bashrc.backup"
+    sudo cp "$HOME/.bashrc" "$HOME/.bashrc.backup"
 fi
-cp .bashrc "$HOME/.bashrc"
+cp .bashrc "$HOME/.bashrc"  # Removed sudo here
 
-chown -R "$(whoami)":"$(whoami)" "$HOME/.config" "$HOME/.bashrc"
+sudo chown -R "$(whoami)":"$(whoami)" "$HOME/.config" "$HOME/.bashrc"
 
 echo ""
 echo "✅ Setup complete!"
