@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 
 # This script will install yay from source on an Arch-based system
 
@@ -36,13 +37,11 @@ sudo pacman -Syu --noconfirm
 # Install the packages using yay
 echo "Installing packages..."
 
-sudo pacman -S ttf-inconsolata-g
-sudo pacman -S ttf-jetbrains-mono-nerd
+sudo pacman -S --no-confirm ttf-inconsolata-g ttf-jetbrains-mono-nerd
 yay -S --noconfirm fastfetch kitty rofi vesktop waybar-cava nm-applet hyprpaper mpvpaper hyprpolkit hyprlock hyprshot teams-for-linux
 
 #Waterfox from source because yay version is cooked
 
-set -e
 
 # Define variables
 INSTALL_DIR="$HOME/waterfox"
