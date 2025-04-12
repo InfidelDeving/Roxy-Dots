@@ -112,11 +112,18 @@ Type=Application
 EOF
 fi
 
+# === Download RoxyGrub and RoxySDDM from GitHub ===
+echo "🔽 Downloading RoxyGrub and RoxySDDM themes from GitHub..."
+
+# Create a temporary directory for the repository
+TEMP_DIR=$(mktemp -d)
+git clone https://github.com/InfidelDeving/Roxy-Dots.git "$TEMP_DIR"
+
 # === GRUB Theme ===
-echo "🎨 Installing GRUB theme..."
-if [ -d "RoxyGrub" ] && [ -f "RoxyGrub/theme.txt" ]; then
+if [ -d "$TEMP_DIR/RoxyGrub" ] && [ -f "$TEMP_DIR/RoxyGrub/theme.txt" ]; then
+    echo "📦 Installing GRUB theme..."
     sudo mkdir -p /usr/share/grub/themes
-    sudo cp -r RoxyGrub /usr/share/grub/themes/
+    sudo cp -r "$TEMP_DIR/RoxyGrub" /usr/share/grub/themes/
     sudo sed -i '/^GRUB_THEME=/d' /etc/default/grub
     echo 'GRUB_THEME="/usr/share/grub/themes/RoxyGrub/theme.txt"' | sudo tee -a /etc/default/grub
 
@@ -134,10 +141,10 @@ else
 fi
 
 # === SDDM Theme ===
-echo "🎨 Installing SDDM theme..."
-if [ -d "RoxySDDM" ] && [ -f "RoxySDDM/theme.conf" ]; then
+if [ -d "$TEMP_DIR/RoxySDDM" ] && [ -f "$TEMP_DIR/RoxySDDM/theme.conf" ]; then
+    echo "📦 Installing SDDM theme..."
     sudo mkdir -p /usr/share/sddm/themes
-    sudo cp -r RoxySDDM /usr/share/sddm/themes/
+    sudo cp -r "$TEMP_DIR/RoxySDDM" /usr/share/sddm/themes/
 
     echo "📝 Setting SDDM theme to RoxySDDM..."
     sudo mkdir -p /etc/sddm.conf.d
@@ -147,28 +154,34 @@ else
     echo "⚠️ RoxySDDM theme not found or missing theme.conf – skipping SDDM theming."
 fi
 
-# === Config Files ===
-echo "📁 Checking if config folders exist in the current directory..."
+# === Download and Install Configs from GitHub ===
+echo "🔽 Downloading config files from GitHub..."
+
+# Download configuration files
+CONFIG_REPO="https://github.com/InfidelDeving/Roxy-Dots.git"
 CONFIG_DIRS=(fastfetch hypr kitty rofi vesktop wal waybar)
 
+# Create .config directory if not exists
 mkdir -p "$HOME/.config"
 
+# Download and copy files
 for dir in "${CONFIG_DIRS[@]}"; do
-    echo "Checking if directory $dir exists in $(pwd)..."
-    if [ -d "$dir" ]; then
-        echo "→ Copying $dir to ~/.config/"
-        sudo cp -r "$dir" "$HOME/.config/"
+    if [ -d "$TEMP_DIR/$dir" ]; then
+        echo "→ Downloading $dir to ~/.config/"
+        sudo cp -r "$TEMP_DIR/$dir" "$HOME/.config/"
     else
-        echo "⚠️ Skipped $dir – not found in $(pwd)."
+        echo "⚠️ Skipped $dir – not found in the repository."
     fi
 done
 
-echo "📁 Copying .bashrc to $HOME/"
-if [ -f "$HOME/.bashrc" ]; then
-    sudo cp "$HOME/.bashrc" "$HOME/.bashrc.backup"
-fi
-cp .bashrc "$HOME/.bashrc"  # Removed sudo here
+# Copy .bashrc from the repo to home directory
+echo "→ Downloading .bashrc to $HOME/"
+cp "$TEMP_DIR/.bashrc" "$HOME/.bashrc"  # No sudo needed here
 
+# Clean up temporary directory
+rm -rf "$TEMP_DIR"
+
+# Fix permissions
 sudo chown -R "$(whoami)":"$(whoami)" "$HOME/.config" "$HOME/.bashrc"
 
 echo ""
@@ -176,5 +189,5 @@ echo "✅ Setup complete!"
 echo "👉 Select 'Hyprland' in the SDDM login screen."
 echo "👉 GRUB and SDDM themes applied (if files found)."
 echo "👉 Waterfox installed to /opt/waterfox and available as 'waterfox'."
-echo "👉 Configs copied to ~/.config/, .bashrc updated."
+echo "👉 Configs downloaded and copied to ~/.config/ and .bashrc updated."
 echo "👉 If AUR packages failed, re-run: yay -S <package>"
