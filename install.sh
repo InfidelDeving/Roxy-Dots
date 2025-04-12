@@ -40,68 +40,6 @@ echo "Installing packages..."
 sudo pacman -S --no-confirm ttf-inconsolata-g ttf-jetbrains-mono-nerd firefox
 yay -S --noconfirm fastfetch kitty rofi vesktop waybar-cava nm-applet hyprpaper mpvpaper hyprpolkit hyprlock hyprshot teams-for-linux
 
-#Waterfox from source because yay version is cooked
-
-
-# Define variables
-INSTALL_DIR="$HOME/waterfox"
-BUILD_DIR="$INSTALL_DIR/waterfox-build"
-SYMLINK_DIR="/usr/local/bin"
-WATERFOX_BIN="$BUILD_DIR/obj-x86_64-pc-linux-gnu/dist/bin/waterfox"
-
-# List of required packages (split into official and AUR)
-ARCH_PACKAGES=(
-  git base-devel python python-pip clang llvm
-  gtk3 dbus-glib libxt libx11 alsa-lib yasm
-  libpulse libvpx libxrandr libxss nss nspr unzip zip
-  icu gstreamer gst-plugins-base
-)
-
-yay -S --noconfirm autoconf2.13
-
-echo ">>> Checking and installing missing dependencies..."
-for pkg in "${ARCH_PACKAGES[@]}"; do
-  if pacman -Qi "$pkg" &>/dev/null; then
-    echo "✓ $pkg is already installed"
-  else
-    echo "→ Installing $pkg..."
-    sudo pacman -S --noconfirm "$pkg"
-  fi
-done
-
-echo ">>> Cloning Waterfox source..."
-mkdir -p "$INSTALL_DIR"
-cd "$INSTALL_DIR"
-if [ ! -d waterfox-source ]; then
-  git clone https://github.com/WaterfoxCo/Waterfox.git waterfox-source
-else
-  echo "✓ Source already cloned. Pulling latest changes..."
-  cd waterfox-source
-  git pull
-fi
-
-cd "$INSTALL_DIR/waterfox-source"
-
-echo ">>> Setting up build environment..."
-cat > mozconfig <<EOF
-ac_add_options --enable-application=browser
-mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/../obj-x86_64-pc-linux-gnu
-ac_add_options --enable-optimize
-ac_add_options --enable-release
-ac_add_options --disable-debug
-EOF
-
-echo ">>> Starting build (this may take a while)..."
-./mach bootstrap
-./mach build
-
-echo ">>> Build complete."
-
-# Create symlink
-echo ">>> Creating symlink to 'waterfox'..."
-sudo ln -sf "$WATERFOX_BIN" "$SYMLINK_DIR/waterfox"
-
-echo ">>> Done! You can now run Waterfox using the command: waterfox"
 
 # Define the list of configuration directories
 CONFIG_DIRS=("fastfetch" "hypr" "kitty" "rofi" "vesktop" "waybar")
