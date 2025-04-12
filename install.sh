@@ -22,23 +22,23 @@ install_yay_packages() {
 # Ensure yay is installed
 if ! command -v yay &> /dev/null; then
     echo "📥 yay not found, installing..."
-    # Remove previous /tmp/yay folder if it exists
     if [ -d "/tmp/yay" ]; then
         echo "⚠️ Removing existing /tmp/yay folder..."
         sudo rm -rf /tmp/yay
     fi
     sudo pacman -S --noconfirm --needed base-devel git
     git clone https://aur.archlinux.org/yay.git /tmp/yay
+    CUR_DIR=$(pwd)
     cd /tmp/yay
     makepkg -si --noconfirm
-    cd -
+    cd "$CUR_DIR"
 fi
 
 echo "🚀 Installing general dependencies..."
 install_pacman_packages hyprland fastfetch sddm
 
 echo "🖼️ Installing Wayland/Hyprland support..."
-install_pacman_packages wayland wayland-protocols xdg-desktop-portal xdg-desktop-portal-hyprland wlroots
+install_pacman_packages wayland wayland-protocols xdg-desktop-portal xdg-desktop-portal-hyprland wlroots xorg-xwayland
 
 echo "🔌 Installing autorun services..."
 install_pacman_packages networkmanager network-manager-applet
@@ -50,49 +50,62 @@ install_yay_packages waterfox vesktop teams-for-linux hyprshot hyprlock
 
 echo "🛠️ Enabling services..."
 sudo systemctl enable --now NetworkManager
-sudo systemctl enable sddm
 
-# Create Hyprland session for SDDM
-echo "📁 Setting up Hyprland session..."
-sudo mkdir -p /usr/share/wayland-sessions
-sudo tee /usr/share/wayland-sessions/hyprland.desktop > /dev/null <<EOF
+if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+    echo "🔁 Enabling SDDM (will start on next boot)..."
+    sudo systemctl enable sddm
+else
+    echo "⚡ Enabling and starting SDDM now..."
+    sudo systemctl enable --now sddm
+fi
+
+# Create Hyprland session for SDDM if not exists
+if [ ! -f /usr/share/wayland-sessions/hyprland.desktop ]; then
+    echo "📁 Creating Hyprland session..."
+    sudo mkdir -p /usr/share/wayland-sessions
+    sudo tee /usr/share/wayland-sessions/hyprland.desktop > /dev/null <<EOF
 [Desktop Entry]
 Name=Hyprland
 Comment=An intelligent dynamic tiling Wayland compositor
 Exec=Hyprland
 Type=Application
 EOF
+fi
 
 # === GRUB Theme ===
 echo "🎨 Installing GRUB theme..."
-sudo mkdir -p /usr/share/grub/themes
-sudo cp -r RoxyGrub /usr/share/grub/themes/
-sudo sed -i '/^GRUB_THEME=/d' /etc/default/grub
-echo 'GRUB_THEME="/usr/share/grub/themes/RoxyGrub/theme.txt"' | sudo tee -a /etc/default/grub
+if [ -d "RoxyGrub" ] && [ -f "RoxyGrub/theme.txt" ]; then
+    sudo mkdir -p /usr/share/grub/themes
+    sudo cp -r RoxyGrub /usr/share/grub/themes/
+    sudo sed -i '/^GRUB_THEME=/d' /etc/default/grub
+    echo 'GRUB_THEME="/usr/share/grub/themes/RoxyGrub/theme.txt"' | sudo tee -a /etc/default/grub
 
-# Regenerate GRUB config
-if [ -d /boot/grub ]; then
-    echo "🔁 Regenerating GRUB config..."
-    sudo grub-mkconfig -o /boot/grub/grub.cfg
-elif [ -d /boot/efi ]; then
-    echo "🔁 Regenerating GRUB config (EFI)..."
-    sudo grub-mkconfig -o /boot/efi/EFI/grub/grub.cfg
+    # Regenerate GRUB config
+    if [ -d /boot/grub ]; then
+        echo "🔁 Regenerating GRUB config..."
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+    elif [ -d /boot/efi ]; then
+        echo "🔁 Regenerating GRUB config (EFI fallback)..."
+        sudo grub-mkconfig -o /boot/efi/grub/grub.cfg
+    else
+        echo "⚠️ GRUB folder not found. Regenerate GRUB config manually."
+    fi
 else
-    echo "⚠️ GRUB folder not found. Regenerate GRUB config manually."
+    echo "⚠️ RoxyGrub theme not found or missing theme.txt – skipping GRUB theming."
 fi
 
 # === SDDM Theme ===
 echo "🎨 Installing SDDM theme..."
-sudo mkdir -p /usr/share/sddm/themes
-sudo cp -r RoxySDDM /usr/share/sddm/themes/
+if [ -d "RoxySDDM" ] && [ -f "RoxySDDM/theme.conf" ]; then
+    sudo mkdir -p /usr/share/sddm/themes
+    sudo cp -r RoxySDDM /usr/share/sddm/themes/
 
-SDDM_CONF="/usr/lib/sddm/sddm.conf.d/default.conf"
-if [ -f "$SDDM_CONF" ]; then
-    sudo sed -i '/^Current=/d' "$SDDM_CONF"
-    echo 'Current=RoxySDDM' | sudo tee -a "$SDDM_CONF"
+    echo "📝 Setting SDDM theme to RoxySDDM..."
+    sudo mkdir -p /etc/sddm.conf.d
+    echo "[Theme]" | sudo tee /etc/sddm.conf.d/roxy.conf
+    echo "Current=RoxySDDM" | sudo tee -a /etc/sddm.conf.d/roxy.conf
 else
-    echo "[Theme]" | sudo tee "$SDDM_CONF"
-    echo "Current=RoxySDDM" | sudo tee -a "$SDDM_CONF"
+    echo "⚠️ RoxySDDM theme not found or missing theme.conf – skipping SDDM theming."
 fi
 
 # === Config Files ===
@@ -110,17 +123,20 @@ for dir in "${CONFIG_DIRS[@]}"; do
     fi
 done
 
-# Copy .bashrc to home directory
-echo "📁 Copying .bashrc to /home/$(whoami)/"
-cp .bashrc "/home/$(whoami)/.bashrc"
+# Copy .bashrc safely
+echo "📁 Backing up and copying .bashrc to $HOME/"
+if [ -f "$HOME/.bashrc" ]; then
+    cp "$HOME/.bashrc" "$HOME/.bashrc.backup"
+fi
+cp .bashrc "$HOME/.bashrc"
 
-# Fix permissions just in case
-chown -R "$(whoami)":"$(whoami)" "$HOME/.config" "/home/$(whoami)/.bashrc"
+# Fix permissions
+chown -R "$(whoami)":"$(whoami)" "$HOME/.config" "$HOME/.bashrc"
 
 echo ""
 echo "✅ Setup complete!"
 echo "👉 Select 'Hyprland' in the SDDM login screen."
-echo "👉 Custom themes applied for GRUB and SDDM."
+echo "👉 Custom themes applied for GRUB and SDDM (if files found)."
 echo "👉 Configs copied to ~/.config/"
-echo "👉 .bashrc copied to home directory."
+echo "👉 .bashrc copied (backup created if needed)."
 echo "👉 If AUR packages failed, re-run: yay -S <package>"
