@@ -22,6 +22,11 @@ install_yay_packages() {
 # Ensure yay is installed
 if ! command -v yay &> /dev/null; then
     echo "📥 yay not found, installing..."
+    # Remove previous /tmp/yay folder if it exists
+    if [ -d "/tmp/yay" ]; then
+        echo "⚠️ Removing existing /tmp/yay folder..."
+        sudo rm -rf /tmp/yay
+    fi
     sudo pacman -S --noconfirm --needed base-devel git
     git clone https://aur.archlinux.org/yay.git /tmp/yay
     cd /tmp/yay
