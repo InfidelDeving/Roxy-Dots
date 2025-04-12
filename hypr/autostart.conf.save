@@ -1,0 +1,5 @@
+# Autostart applications
+exec-once = waybar
+exec-once = nm-applet
+exec-once = hyprpaper 
+exec-once = mpvpaper -s -o "--loop-file inf" '*' /home/infidel/wallpaper/roxy1.mp4
