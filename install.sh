@@ -93,7 +93,7 @@ ac_add_options --disable-debug
 EOF
 
 echo ">>> Starting build (this may take a while)..."
-./mach bootstrap --no-interactive
+./mach bootstrap
 ./mach build
 
 echo ">>> Build complete."
