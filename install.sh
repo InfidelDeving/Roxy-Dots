@@ -46,20 +46,60 @@ install_yay_packages waybar-cava hyprpaper mpvpaper hyprpolkit
 
 echo "🧷 Installing bind applications..."
 install_pacman_packages kitty dolphin rofi
-install_yay_packages waterfox vesktop teams-for-linux hyprshot hyprlock
+install_yay_packages vesktop teams-for-linux hyprshot hyprlock
+
+# === Build and install Waterfox from source ===
+echo "🛠️ Building Waterfox from source..."
+
+# Install build dependencies
+install_pacman_packages git base-devel autoconf2.13 unzip zip nodejs npm python rust clang llvm libpulse dbus-glib gtk3 icu lld mesa gtk2 libvpx libnotify nss
+
+BUILD_DIR="/tmp/waterfox-build"
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
+cd "$BUILD_DIR"
+
+# Clone and configure
+git clone https://github.com/WaterfoxCo/Waterfox.git
+cd Waterfox
+
+cat > .mozconfig <<EOF
+ac_add_options --enable-release
+ac_add_options --enable-optimize
+ac_add_options --enable-default-toolkit=cairo-gtk3-wayland
+ac_add_options --disable-debug
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj
+EOF
+
+./mach bootstrap --application-choice=browser --no-interactive
+./mach build
+
+# Install
+echo "📦 Installing Waterfox..."
+sudo mkdir -p /opt/waterfox
+sudo cp -r obj/dist/bin/* /opt/waterfox/
+sudo ln -sf /opt/waterfox/waterfox /usr/local/bin/waterfox
+
+# Desktop entry
+echo "🖥️ Creating Waterfox desktop entry..."
+cat | sudo tee /usr/share/applications/waterfox.desktop > /dev/null <<EOF
+[Desktop Entry]
+Name=Waterfox
+Comment=Privacy-focused web browser
+Exec=/opt/waterfox/waterfox %u
+Icon=/opt/waterfox/browser/chrome/icons/default/default128.png
+Terminal=false
+Type=Application
+Categories=Network;WebBrowser;
+EOF
+
+cd -
 
 echo "🛠️ Enabling services..."
 sudo systemctl enable --now NetworkManager
+sudo systemctl enable sddm
 
-if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
-    echo "🔁 Enabling SDDM (will start on next boot)..."
-    sudo systemctl enable sddm
-else
-    echo "⚡ Enabling and starting SDDM now..."
-    sudo systemctl enable --now sddm
-fi
-
-# Create Hyprland session for SDDM if not exists
+# Hyprland session
 if [ ! -f /usr/share/wayland-sessions/hyprland.desktop ]; then
     echo "📁 Creating Hyprland session..."
     sudo mkdir -p /usr/share/wayland-sessions
@@ -80,7 +120,6 @@ if [ -d "RoxyGrub" ] && [ -f "RoxyGrub/theme.txt" ]; then
     sudo sed -i '/^GRUB_THEME=/d' /etc/default/grub
     echo 'GRUB_THEME="/usr/share/grub/themes/RoxyGrub/theme.txt"' | sudo tee -a /etc/default/grub
 
-    # Regenerate GRUB config
     if [ -d /boot/grub ]; then
         echo "🔁 Regenerating GRUB config..."
         sudo grub-mkconfig -o /boot/grub/grub.cfg
@@ -123,20 +162,18 @@ for dir in "${CONFIG_DIRS[@]}"; do
     fi
 done
 
-# Copy .bashrc safely
-echo "📁 Backing up and copying .bashrc to $HOME/"
+echo "📁 Copying .bashrc to $HOME/"
 if [ -f "$HOME/.bashrc" ]; then
     cp "$HOME/.bashrc" "$HOME/.bashrc.backup"
 fi
 cp .bashrc "$HOME/.bashrc"
 
-# Fix permissions
 chown -R "$(whoami)":"$(whoami)" "$HOME/.config" "$HOME/.bashrc"
 
 echo ""
 echo "✅ Setup complete!"
 echo "👉 Select 'Hyprland' in the SDDM login screen."
-echo "👉 Custom themes applied for GRUB and SDDM (if files found)."
-echo "👉 Configs copied to ~/.config/"
-echo "👉 .bashrc copied (backup created if needed)."
+echo "👉 GRUB and SDDM themes applied (if files found)."
+echo "👉 Waterfox installed to /opt/waterfox and available as 'waterfox'."
+echo "👉 Configs copied to ~/.config/, .bashrc updated."
 echo "👉 If AUR packages failed, re-run: yay -S <package>"
