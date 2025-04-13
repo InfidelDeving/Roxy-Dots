@@ -6,6 +6,7 @@ in case anyone ever sees this:
 
   only meant for an archinstall hyprland sddm profile because im only ever going to use it in that way.
   seriously dont run the script on an already configured machine its made by a joker
+  
   if you really crave the roxy rice so bad just install dependancies and configs manually
 
 install script for install script:
