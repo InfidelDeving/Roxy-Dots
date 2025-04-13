@@ -98,27 +98,9 @@ sudo cp -r "$THEME_DIR" "$DEST_DIR"
 echo "Backing up the original config file..."
 sudo cp "$CONF_FILE" "$CONF_FILE.bak"
 
-# Edit the config file to set Current=RoxySDDM under the [Theme] section
-echo "Updating the configuration..."
-sudo awk '
-/^\[Theme\]/ {
-  in_theme_section=1
-  print
-  next
-}
-/^\[/ {
-  in_theme_section=0
-  print
-  next
-}
-in_theme_section && /^Current=/ {
-  print "Current=RoxySDDM"
-  next
-}
-{
-  print
-}
-' "$CONF_FILE.bak" | sudo tee "$CONF_FILE" > /dev/null
+# copy config
+sudo rm "$CONF_FILE"
+sudo cp default.conf "$CONF_FILE"
 
 echo "Done. Theme set to RoxySDDM."
 
